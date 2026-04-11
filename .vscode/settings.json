@@ -1,0 +1,35 @@
+{
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.git": true,
+    "**/.react-router": true,
+    "**/build": true,
+    "**/dist": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/.react-router/**": true,
+    "**/build/**": true,
+    "**/dist/**": true
+  },
+  "files.exclude": {
+    "**/.react-router": true,
+    "**/build": true,
+    "**/dist": true
+  },
+  "typescript.tsserver.maxTsServerMemory": 2048,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "javascript.suggest.autoImports": false,
+  "typescript.suggest.autoImports": false,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "never"
+  },
+  "python.analysis.indexing": false,
+  "python.analysis.autoSearchPaths": false,
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.terminal.activateEnvironment": false,
+  "jupyter.askForKernelRestart": false
+}
