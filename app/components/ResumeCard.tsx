@@ -2,29 +2,42 @@ import { Link } from "react-router";
 import ScoreCircle from "./ScoreCircle";
 import { useEffect, useState } from "react";
 import { usePuterStore } from "~/lib/puter";
+import { convertPdfToImage } from "~/lib/pdf2img";
 
 const ResumeCard = ({
-  resume: { id, companyName, jobTitle, feedback, imagePath },
+  resume: { id, companyName, jobTitle, feedback, imagePath, resumePath },
 }: {
   resume: Resume;
 }) => {
   const { fs } = usePuterStore();
-  const [resumeUrl, setResumeUrl] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
 
   useEffect(() => {
     let objectUrl = "";
 
     const loadResume = async () => {
+      const pdfBlob = await fs.read(resumePath);
+      if (pdfBlob) {
+        const previewImage = await convertPdfToImage(
+          new File([pdfBlob], "resume.pdf", { type: "application/pdf" }),
+        );
+        if (previewImage.imageUrl) {
+          objectUrl = previewImage.imageUrl;
+          setPreviewUrl(objectUrl);
+          return;
+        }
+      }
+
       if (typeof imagePath === "string" && imagePath.startsWith("/")) {
-        setResumeUrl(imagePath);
+        setPreviewUrl(imagePath);
         return;
       }
 
-      const blob = await fs.read(imagePath);
-      if (!blob) return;
+      const imageBlob = await fs.read(imagePath);
+      if (!imageBlob) return;
 
-      objectUrl = URL.createObjectURL(blob);
-      setResumeUrl(objectUrl);
+      objectUrl = URL.createObjectURL(imageBlob);
+      setPreviewUrl(objectUrl);
     };
 
     loadResume();
@@ -34,7 +47,7 @@ const ResumeCard = ({
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [fs, imagePath]);
+  }, [fs, imagePath, resumePath]);
 
   return (
     <Link
@@ -57,11 +70,11 @@ const ResumeCard = ({
           <ScoreCircle score={feedback.overallScore} />
         </div>
       </div>
-      {resumeUrl && (
+      {previewUrl && (
         <div className="gradient-border animate-in fade-in duration-1000">
           <div className="w-full h-full">
             <img
-              src={resumeUrl}
+              src={previewUrl}
               alt="resume"
               className="w-full h-[350px] max-sm:h-[200px] object-cover object-top"
             />

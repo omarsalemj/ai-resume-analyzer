@@ -4,6 +4,7 @@ import { usePuterStore } from "~/lib/puter";
 import Summary from "~/components/Summary";
 import Details from "~/components/Details";
 import ATS from "~/components/ATS";
+import { convertPdfToImage } from "~/lib/pdf2img";
 
 export const meta = () => [
   { title: "Resumind | Review" },
@@ -21,39 +22,54 @@ const Resume = () => {
   useEffect(() => {
     if (!isLoading && !auth.isAuthenticated)
       navigate(`/auth?next=/resume/${id}`);
-  }, [isLoading]);
+  }, [auth.isAuthenticated, id, isLoading, navigate]);
 
   useEffect(() => {
     const objectUrls: string[] = [];
 
     const loadResume = async () => {
-      const resume = await kv.get(`resume:${id}`);
-      if (!resume) return;
+      try {
+        const resume = await kv.get(`resume:${id}`);
+        if (!resume) return;
 
-      const data = JSON.parse(resume);
-      const resumeBlob = await fs.read(data.resumePath);
-      if (!resumeBlob) return;
+        const data = JSON.parse(resume);
+        setFeedback(data.feedback);
 
-      const pdfBlob = new Blob([resumeBlob], { type: "application/pdf" });
-      const nextResumeUrl = URL.createObjectURL(pdfBlob);
-      objectUrls.push(nextResumeUrl);
-      setResumeUrl(nextResumeUrl);
+        const resumeBlob = await fs.read(data.resumePath);
+        if (!resumeBlob) return;
 
-      if (
-        typeof data.imagePath === "string" &&
-        data.imagePath.startsWith("/")
-      ) {
-        setImageUrl(data.imagePath);
-      } else {
+        const pdfBlob = new Blob([resumeBlob], { type: "application/pdf" });
+        const nextResumeUrl = URL.createObjectURL(pdfBlob);
+        objectUrls.push(nextResumeUrl);
+        setResumeUrl(nextResumeUrl);
+
+        const previewImage = await convertPdfToImage(
+          new File([pdfBlob], "resume.pdf", { type: "application/pdf" }),
+        );
+
+        if (previewImage.imageUrl) {
+          objectUrls.push(previewImage.imageUrl);
+          setImageUrl(previewImage.imageUrl);
+          return;
+        }
+
+        if (
+          typeof data.imagePath === "string" &&
+          data.imagePath.startsWith("/")
+        ) {
+          setImageUrl(data.imagePath);
+          return;
+        }
+
         const imageBlob = await fs.read(data.imagePath);
         if (!imageBlob) return;
 
         const nextImageUrl = URL.createObjectURL(imageBlob);
         objectUrls.push(nextImageUrl);
         setImageUrl(nextImageUrl);
+      } catch (error) {
+        console.error("Failed to load resume preview", error);
       }
-
-      setFeedback(data.feedback);
     };
 
     loadResume();
@@ -75,16 +91,25 @@ const Resume = () => {
       </nav>
       <div className="flex flex-row w-full max-lg:flex-col-reverse">
         <section className="feedback-section bg-[url('/images/bg-small.svg')] bg-cover h-[100vh] sticky top-0 items-center justify-center">
-          {imageUrl && resumeUrl && (
+          {imageUrl && (
             <div className="animate-in fade-in duration-1000 gradient-border max-sm:m-0 h-[90%] max-w-2xl:h-fit w-fit">
-              <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
+              {resumeUrl ? (
+                <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={imageUrl}
+                    alt="resume"
+                    className="w-full h-full object-contain rounded-2xl"
+                    title="resume"
+                  />
+                </a>
+              ) : (
                 <img
                   src={imageUrl}
                   alt="resume"
                   className="w-full h-full object-contain rounded-2xl"
                   title="resume"
                 />
-              </a>
+              )}
             </div>
           )}
         </section>
