@@ -12,15 +12,29 @@ const ResumeCard = ({
   const [resumeUrl, setResumeUrl] = useState("");
 
   useEffect(() => {
+    let objectUrl = "";
+
     const loadResume = async () => {
+      if (typeof imagePath === "string" && imagePath.startsWith("/")) {
+        setResumeUrl(imagePath);
+        return;
+      }
+
       const blob = await fs.read(imagePath);
       if (!blob) return;
-      let url = URL.createObjectURL(blob);
-      setResumeUrl(url);
+
+      objectUrl = URL.createObjectURL(blob);
+      setResumeUrl(objectUrl);
     };
 
     loadResume();
-  }, [imagePath]);
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [fs, imagePath]);
 
   return (
     <Link
